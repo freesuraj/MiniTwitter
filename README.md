@@ -1,8 +1,8 @@
 # MiniTwitter
 A twitter like api with minimal functions that supports offline browsing and offline creation of tweets.
-![ScreenShot](http://s18.postimg.org/mylhi0f8l/Simulator_Screen_Shot_9_Oct_2015_11_26_56_AM.png)
+![ScreenShot](http://i.imgur.com/KGwuemy.png)
 
-![ScreenShot](http://s18.postimg.org/cn94pcnj9/Simulator_Screen_Shot_9_Oct_2015_11_28_05_AM.png)
+![ScreenShot](http://i.imgur.com/WFOAzck.png)
 
 #Frameworks used:
 
