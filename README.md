@@ -4,18 +4,18 @@ A twitter like api with minimal functions that supports offline browsing and off
 #Frameworks used:
 
 ###For Twitter APIs
-*Fabric
-*TwitterCore
-*TwitterKit
+* Fabric
+* TwitterCore
+* TwitterKit
 
 ###For offline image cache
-*HanekeSwift
+* HanekeSwift
 
 ###For HUD display
-*JGProgressHUD
+* JGProgressHUD
 
 ###For database
-*RealmSwift
+* RealmSwift
 
 ###For parsing json objects
-*SwiftyJSON
+* SwiftyJSON
