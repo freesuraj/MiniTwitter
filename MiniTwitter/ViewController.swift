@@ -9,7 +9,6 @@
 import UIKit
 
 import Haneke
-import ReachabilitySwift
 import RealmSwift
 import SwiftyJSON
 import TwitterKit
@@ -27,6 +26,23 @@ class TweetCell: UITableViewCell {
         profileImageView.layer.borderColor = UIColor.lightGrayColor().CGColor
         profileImageView.layer.masksToBounds = true
         profileImageView.layer.cornerRadius = 10.0
+    }
+    
+    // Customize cell with a tweet object
+    func customizeWithTweet(tweetObject: TweetObject) {
+        nameLabel.text = tweetObject.username
+        handleLabel.text = "@" + tweetObject.handle
+        messageLabel.text = tweetObject.text
+        dateLabel.text = NSDate(timeIntervalSince1970: tweetObject.date).getCurrentShortDate()
+        if let url = NSURL(string: tweetObject.userImage) {
+            self.profileImageView.hnk_setImageFromURL(url, placeholder: UIImage(named: "user")!, format: nil, failure: nil, success: { img in
+                self.profileImageView.hnk_setImage(img, animated: true, success: nil)
+            })
+        } else {
+            self.profileImageView.hnk_setImage(UIImage(named: "user")!, animated: true, success: nil)
+        }
+        
+        self.draftIndicator.hidden = !tweetObject.needSync
     }
 }
 
@@ -49,32 +65,34 @@ class ViewController: UIViewController {
         let pullToRefreshAttributedText = NSMutableAttributedString(string: pullToRefreshText)
         pullToRefreshAttributedText.addAttribute(NSForegroundColorAttributeName, value: UIColor.darkGrayColor(), range: NSMakeRange(0, pullToRefreshText.characters.count))
         refreshControl.attributedTitle = pullToRefreshAttributedText
-        
         refreshControl.addTarget(self, action: "loadTweets", forControlEvents: UIControlEvents.ValueChanged)
         tableView.addSubview(refreshControl)
         
-        showTwitterLoginOption()
-        Reachability.reachabilityForInternetConnection()?.startNotifier()
+        // Add a notification observer for change of connection
+        let reachability = Reachability.reachabilityForInternetConnection()
         NSNotificationCenter.defaultCenter().addObserver(self, selector: "reachabilityChanged:", name: kReachabilityChangedNotification, object: nil)
+        reachability.startNotifier()
+        
+        // Twitter Login
+        showTwitterLoginOption()
     }
     
     func reachabilityChanged(sender: NSNotification) {
        let reach = sender.object as! Reachability
-        if reach.isReachable() {
-            print("reachable internet")
+        if (reach.currentReachabilityStatus() == NotReachable) {
+            print("offline ")
         } else {
-            print("offline")
+            loadTweets()
         }
     }
     
-    
+    // See if previous logged in session exists, otherwise force user to login first
     func showTwitterLoginOption() {
-        // See if previous logged in session exists, otherwise force user to login first
         Twitter.sharedInstance().logInWithCompletion { session, error in
             if (session != nil) {
                 print("signed in as \(session!.userName)");
-                NSUserDefaults.standardUserDefaults().setValue(session!.userID, forKey: "userID")
-                
+                // Save basic user info
+                self.syncUser()
                 self.loadTweets()
             } else {
                 print("error: \(error!.localizedDescription)");
@@ -83,13 +101,14 @@ class ViewController: UIViewController {
         }
     }
     
-    
-    
+    // Sync user
     func syncUser() {
         if let userID = Twitter.sharedInstance().sessionStore.session()?.userID {
             let client = TWTRAPIClient(userID: userID)
             client.loadUserWithID(userID, completion: { user, error in
-                print("user \(user) and error \(error)")
+                if let twUser = user {
+                  TwitterUser.saveTwitterUser(twUser)
+                }
             })
         }
     }
@@ -127,21 +146,7 @@ class ViewController: UIViewController {
     // MARK:  UITableViewDataSource Methods
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("TweetCell", forIndexPath: indexPath) as! TweetCell
-        
-        let tweetObject = self.incomingTweets[indexPath.row]
-        cell.nameLabel.text = tweetObject.username
-        cell.handleLabel.text = "@" + tweetObject.handle
-        cell.messageLabel.text = tweetObject.text
-        cell.dateLabel.text = NSDate(timeIntervalSince1970: tweetObject.date).getCurrentShortDate()
-        if let url = NSURL(string: tweetObject.userImage) {
-            cell.profileImageView.hnk_setImageFromURL(url, placeholder: UIImage(named: "user")!, format: nil, failure: nil, success: { img in
-                cell.profileImageView.hnk_setImage(img, animated: true, success: nil)
-            })
-        } else {
-            cell.profileImageView.hnk_setImage(UIImage(named: "user")!, animated: true, success: nil)
-        }
-        
-        cell.draftIndicator.hidden = !tweetObject.needSync
+        cell.customizeWithTweet(self.incomingTweets[indexPath.row])
         
         return cell
         

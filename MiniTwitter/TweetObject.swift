@@ -41,8 +41,20 @@ class TwitterUser: Object {
         return "userId"
     }
     
+    static func saveTwitterUser(twuser: TWTRUser) {
+        let user = TwitterUser()
+        user.name = twuser.name
+        user.handle = twuser.screenName
+        user.userId = twuser.userID
+        user.userImage = twuser.profileImageMiniURL
+        NSUserDefaults.standardUserDefaults().setValue(twuser.userID, forKey: "userID")
+        RealmManager.safeWrite({
+            RealmManager.realm.add(user, update: true)
+        })
+    }
+    
     static func getCurrentUser() -> TwitterUser? {
-        if let defaultUserId = NSUserDefaults.standardUserDefaults().valueForKey("userId") {
+        if let defaultUserId = NSUserDefaults.standardUserDefaults().valueForKey("userID") {
             return RealmManager.realm.objectForPrimaryKey(TwitterUser.self, key: defaultUserId)!
         }
         return nil
